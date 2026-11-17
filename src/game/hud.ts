@@ -90,7 +90,7 @@ export function drawChart(c: HTMLCanvasElement, pts: ChartPoint[], you: number |
   g.fillStyle = MUTED; g.textAlign = 'right'; g.fillText('full lap', R - 3, yFin + 7);
   let lastTick = -99;
   for (const tick of [0, 5, 20, 50, 100, 200, 300]) {
-    if (tick > span || X(tick) - lastTick < 26) continue;
+    if (tick > span || X(tick) - lastTick < (lastTick === L ? 40 : 26)) continue;
     lastTick = X(tick);
     g.textAlign = tick ? 'center' : 'left';
     g.fillText(tick ? String(tick) : 'gen 0', X(tick), h - 5);

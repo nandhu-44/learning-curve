@@ -57,7 +57,7 @@ export class CarView {
   constructor(readonly kind: CarKind) {
     const ghost = kind === 'ghost';
     const paint = ghost
-      ? (this.ghostMat = new THREE.MeshLambertMaterial({ color: COLOR.ghost, transparent: true, opacity: 0.42, depthWrite: false }))
+      ? (this.ghostMat = new THREE.MeshLambertMaterial({ color: COLOR.ghost, transparent: true, opacity: 0.36, depthWrite: false }))
       : new THREE.MeshStandardMaterial({ color: kind === 'player' ? COLOR.player : COLOR.rival, roughness: 0.42, metalness: 0.15 });
     const dark = ghost ? paint : new THREE.MeshStandardMaterial({ color: COLOR.ink, roughness: 0.6 });
     const add = (geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number, parent: THREE.Object3D = this.body) => {
@@ -92,7 +92,7 @@ export class CarView {
     this.body.rotation.x = -steer * (v / VMAX) * 0.1; // lean out of the bend
     for (const p of this.front) p.rotation.y = steer * 0.42;
     this.group.visible = fade > 0.02;
-    if (this.ghostMat) this.ghostMat.opacity = 0.42 * fade;
+    if (this.ghostMat) this.ghostMat.opacity = 0.36 * fade;
     else this.group.scale.setScalar(Math.max(fade, 0.001));
   }
 }
@@ -128,6 +128,7 @@ export class World {
         fragmentShader: 'uniform vec3 top;uniform vec3 low;varying float h;void main(){gl_FragColor=vec4(mix(low,top,pow(clamp(h*1.6,0.,1.),.7)),1.);}',
       }),
     );
+    sky.renderOrder = -2;
     s.add(sky, new THREE.HemisphereLight(0xe6f3ff, 0x7fa462, 1.25));
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
@@ -143,7 +144,10 @@ export class World {
       for (let i = 0; i < 500; i++) { g.fillStyle = i % 2 ? 'rgba(255,255,220,.06)' : 'rgba(20,60,20,.07)'; g.fillRect(Math.random() * 128, Math.random() * 128, 2, 2); }
     });
     grass.repeat.set(90, 90);
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(3200, 3200).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ map: grass }));
+    // The ground is drawn first and leaves the depth buffer alone. Depth interpolated across triangles this
+    // large is too coarse to keep it reliably below a road lying 3 cm above it; this way nothing can lose to it.
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(3200, 3200).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ map: grass, depthWrite: false }));
+    ground.renderOrder = -1;
     ground.receiveShadow = true;
     s.add(ground);
 

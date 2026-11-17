@@ -10,8 +10,8 @@
   --sky: #dcebf3;
   --display: 'Chakra Petch', 'Avenir Next Condensed', 'Arial Narrow', system-ui, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
-  --pad-l: max(14px, env(safe-area-inset-left, 0px));
-  --pad-r: max(14px, env(safe-area-inset-right, 0px));
+  --pad-l: max(16px, env(safe-area-inset-left, 0px));
+  --pad-r: max(16px, env(safe-area-inset-right, 0px));
   --pad-t: calc(12px + env(safe-area-inset-top, 0px));
   --pad-b: calc(14px + env(safe-area-inset-bottom, 0px));
 }

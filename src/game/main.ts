@@ -185,7 +185,6 @@ function finish(won: boolean, timedOut: boolean): void {
   setScreen('result');
   drawChart(ui.resChart, S.points, bestLap, over ? null : genForRound(round + 1));
   sound.jingle(won ? [523, 659, 784, 1047] : [392, 330, 262, 196]);
-  (over ? ui.again : ui.next).focus({ preventScroll: true });
 }
 
 function simStep(): void {
@@ -254,10 +253,13 @@ function advance(dt: number, draw = true): void {
   }
 
   const a = mode === 'race' || mode === 'attract' ? acc / DT : 1;
-  for (const l of S.learners) {
+  const eye = S.world.camera.position;
+  S.learners.forEach((l, i) => {
     l.fade = l.car.alive && !l.car.finished ? 1 : Math.max(0, l.fade - dt * (l.car.finished ? 1.4 : 3));
-    place(l, a, l.fade);
-  }
+    // Ghosts thin out as they near the lens, so a pack sitting on your bumper does not hide the road.
+    const near = i ? Math.min(1, Math.max(0, (Math.hypot(l.car.x - eye.x, -l.car.y - eye.z) - 6) / 10)) : 1;
+    place(l, a, l.fade * near);
+  });
   if (mode === 'attract') {
     // Follow whoever is furthest round, without flicking between cars that are level.
     let best = leader;
@@ -279,8 +281,8 @@ function advance(dt: number, draw = true): void {
       ui.time.textContent = c.time.toFixed(2);
       if (!r.alive) { ui.gap.textContent = `gen ${runGen} off at ${pct(r)}`; ui.gap.className = ''; }
       else {
-        const m = ((c.prog - r.prog) / TAU) * S.track.length;
-        ui.gap.textContent = `${m >= 0 ? '+' : '−'}${Math.abs(m).toFixed(0)} m`;
+        const m = Math.round(((c.prog - r.prog) / TAU) * S.track.length);
+        ui.gap.textContent = `${m >= 0 ? '+' : '−'}${Math.abs(m)} m`;
         ui.gap.className = m >= 0 ? 'ahead' : 'behind';
       }
       if (c.time > 6) ui.hint.style.opacity = '0';
@@ -343,6 +345,12 @@ ui.mute.addEventListener('click', () => {
   store.set('muted', sound.muted ? '1' : '');
 });
 if (store.get('muted')) ui.mute.click();
+addEventListener('keydown', (e) => {
+  // Enter moves on from a card. (Space is the brake, so it must not press buttons.)
+  if (e.key !== 'Enter' || e.repeat) return;
+  const b = !ui.title.hidden ? ui.race : !ui.result.hidden ? (ui.next.hidden ? ui.again : ui.next) : null;
+  if (b && !b.disabled) { e.preventDefault(); b.click(); }
+});
 addEventListener('resize', () => S.world.resize());
 document.addEventListener('visibilitychange', () => { sound.pause(document.hidden); last = performance.now(); });
 
@@ -352,6 +360,12 @@ const today = new Date();
 openTrack(Number.isInteger(asked) && asked > 0 ? asked : today.getUTCFullYear() * 10000 + (today.getUTCMonth() + 1) * 100 + today.getUTCDate());
 
 if (query.has('capture')) {
-  // Frame-exact stepping for recording: `__lc.frames(n)` advances n frames of 1/60 s and draws the last one.
-  (window as unknown as { __lc: unknown }).__lc = { frames: (n: number) => { for (let i = 0; i < n; i++) advance(DT, i === n - 1); }, mode: () => mode, gens: () => S.coach.gens.length };
+  // Frame-exact stepping for recording: `__lc.frames(n)` advances n frames of 1/60 s and draws the last one;
+  // `__lc.show(gen)` puts a chosen generation on the grid in watch mode.
+  (window as unknown as { __lc: unknown }).__lc = {
+    frames: (n: number) => { for (let i = 0; i < n; i++) advance(DT, i === n - 1); },
+    show: (gen: number) => { const g = S.coach.gens[gen]; if (g) { runGen = g.gen; S.grid(g, false); leader = 0; hold = 0; ui.netTitle.textContent = `Generation ${g.gen} · ${limited(g)}`; ui.watchText.textContent = `Watching generation ${g.gen}`; } },
+    mode: () => mode,
+    gens: () => S.coach.gens.length,
+  };
 } else requestAnimationFrame(loop);

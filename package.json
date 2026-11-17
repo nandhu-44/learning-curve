@@ -5,6 +5,23 @@
   "private": true,
   "type": "module",
   "license": "MIT",
+  "homepage": "https://nandhu-44.github.io/learning-curve/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nandhu-44/learning-curve.git"
+  },
+  "keywords": [
+    "neuroevolution",
+    "genetic-algorithm",
+    "neural-network",
+    "threejs",
+    "webgl",
+    "racing-game",
+    "machine-learning"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
