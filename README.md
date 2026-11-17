@@ -17,7 +17,11 @@ Everything runs in the page: no server, no model files, no ML library. The netwo
 
 The throttle is always open, so driving is steering and braking. Touching a wall slows you down. For the network, touching a wall ends its lap.
 
-Each round you race one lap against a later generation. With no track in the address you get the track of the day, the same for everyone; `?track=1234` picks a specific one and **New track** rolls a random one. A track always produces the same sequence of rivals, so you can compare how many rounds you lasted on it.
+Each round you race one lap against a later generation. With no track in the address you get the track you played last (or, on a first visit, the track of the day, the same for everyone); `?track=1234` picks a specific one and **New track** rolls a random one. A track always produces the same sequence of rivals, so you can compare how many rounds you lasted on it.
+
+### Saved in your browser
+
+Per track, the game remembers your furthest round, your fastest lap, and a game in progress: after a reload the title card offers **Continue** from the round you were on. It uses `localStorage` only, nothing leaves your device, and it keeps the last 50 tracks. Training itself is not saved: it is deterministic, so the same track retrains to the same rivals in a few seconds.
 
 ## How it learns
 
@@ -94,7 +98,7 @@ A few details that mattered:
 
 | Option | Effect |
 |---|---|
-| `?track=N` | Use track `N` instead of the track of the day |
+| `?track=N` | Use track `N` instead of your last one |
 | `?autopilot` | The reference driver takes your seat: a demo of a full game |
 | `?capture` | Stops the real-time loop and exposes `window.__lc` for frame-exact recording; this is how the GIFs above were made |
 

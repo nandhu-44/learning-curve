@@ -41,8 +41,8 @@ body[data-mode='title'] .hud > :not(.chip), body[data-mode='result'] .hud > :not
 .clock small:empty { display: none; }
 .clock small.behind { background: var(--red); color: #fff; }
 .clock small.ahead { background: var(--yellow); }
-.chip { right: var(--pad-r); top: var(--pad-t); background: var(--paper); padding: 7px 11px; font-size: 0.76rem; letter-spacing: 0.06em; text-transform: uppercase; }
-.map { right: var(--pad-r); top: calc(var(--pad-t) + 40px); width: 118px; height: 118px; }
+.chip { right: var(--pad-r); top: var(--pad-t); background: var(--paper); padding: 9px 12px; min-height: 36px; font-size: 0.76rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.map { right: var(--pad-r); top: calc(var(--pad-t) + 46px); width: 118px; height: 118px; }
 .panel { background: var(--paper); padding: 8px 10px 10px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 .panel h2 { margin: 0 0 6px; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .panel canvas { display: block; width: 100%; }
@@ -59,6 +59,13 @@ body[data-mode='title'] .hud > :not(.chip), body[data-mode='result'] .hud > :not
 }
 @media (max-width: 560px) { .map { width: 92px; height: 92px; } .clock > span { font-size: 1.6rem; } .hint { font-size: 0.72rem; } }
 
+/* Touch screens: the controls are two zones, shown as labels along the bottom for the first few seconds. */
+.zones { display: none; left: var(--pad-l); right: var(--pad-r); bottom: var(--pad-b); gap: 8px; transition: opacity 0.8s; pointer-events: none; }
+.zones span { background: var(--paper); padding: 9px 10px; font: 600 0.74rem/1.2 var(--mono); text-align: center; text-transform: uppercase; letter-spacing: 0.04em; }
+.zones span:first-child { flex: 58 1 0; }
+.zones span:last-child { flex: 42 1 0; background: var(--red); color: #fff; }
+@media (hover: none) { .zones { display: flex; } .hint { display: none; } }
+
 /* ---- cards ---- */
 .card { position: fixed; left: var(--pad-l); bottom: var(--pad-b); width: min(27rem, calc(100vw - var(--pad-l) - var(--pad-r))); max-height: calc(100% - var(--pad-t) - var(--pad-b)); overflow-y: auto;
   background: var(--paper); padding: 20px 20px 18px; display: flex; flex-direction: column; gap: 12px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 18px 50px rgba(22, 24, 29, 0.22); }
@@ -74,6 +81,7 @@ body[data-mode='title'] .hud > :not(.chip), body[data-mode='result'] .hud > :not
 .go:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
 .go:disabled { background: #d9dce2; color: var(--muted); box-shadow: none; cursor: progress; }
 .go.small { font-size: 0.8rem; padding: 7px 12px; box-shadow: none; }
+.alt:disabled { opacity: 0.45; cursor: progress; }
 .alt { background: transparent; border: 2px solid var(--ink); padding: 10px 14px; font-weight: 600; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; }
 .keys { margin: 0; font-size: 0.78rem; color: var(--muted); }
 .stats { margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
@@ -85,4 +93,16 @@ body[data-mode='title'] .hud > :not(.chip), body[data-mode='result'] .hud > :not
 .count { position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none; font: 700 clamp(5rem, 26vw, 11rem) / 1 var(--display); color: var(--yellow); -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; }
 .stick { position: fixed; width: 150px; height: 44px; margin: -22px 0 0 -75px; border: 2px solid rgba(255, 255, 255, 0.85); background: rgba(22, 24, 29, 0.25); pointer-events: none; }
 .stick i { position: absolute; left: 50%; top: 50%; width: 22px; height: 34px; margin: -17px 0 0 -11px; background: var(--yellow); border: 2px solid var(--ink); }
-@media (prefers-reduced-motion: reduce) { .hint { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .hint, .zones { transition: none; } }
+
+/* Phones: a tighter card with the main button on its own row. Kept last so it wins over the card rules above. */
+@media (hover: none) and (max-width: 560px) {
+  .card { padding: 16px 16px 14px; gap: 10px; }
+  .card h1 { font-size: 2.4rem; }
+  .card h1 em { display: inline; }
+  .lede { font-size: 0.92rem; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; }
+  .row .go { grid-column: 1 / -1; text-align: center; padding: 14px 16px; }
+  .row .alt { padding: 12px 10px; }
+  .alt, .go { min-height: 46px; }
+}

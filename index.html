@@ -23,6 +23,7 @@
       <canvas id="map" class="map"></canvas>
       <div class="panel net"><h2 id="netTitle">Rival's network, live</h2><canvas id="net"></canvas></div>
       <div class="panel curve"><h2>Champion by generation</h2><canvas id="chart"></canvas></div>
+      <div class="zones race-only" id="zones" aria-hidden="true"><span>◀ drag to steer ▶</span><span>hold to brake</span></div>
       <p class="hint race-only" id="hint"><span class="touch">Drag on the left to steer · hold the right to brake</span><span class="fine">← → steer · ↓ or Space brakes · the throttle is always open</span></p>
     </div>
 
@@ -35,11 +36,12 @@
       <p class="live" id="live">Starting the first generation…</p>
       <canvas id="titleChart" class="chart"></canvas>
       <div class="row">
+        <button id="cont" class="go" type="button" hidden disabled>Continue</button>
         <button id="race" class="go" type="button" disabled>Race it</button>
         <button id="justWatch" class="alt" type="button">Watch it learn</button>
         <button id="newTrack" class="alt" type="button">New track</button>
       </div>
-      <p class="keys"><span id="trackName"></span><span class="touch"> · Drag on the left to steer, hold the right to brake. Best sideways.</span><span class="fine"> · ← → or A D to steer, ↓ / S / Space to brake, Enter to start.</span></p>
+      <p class="keys"><span id="trackName"></span><span class="touch"> · Drag on the left to steer, hold the right to brake. Landscape feels best.</span><span class="fine"> · ← → or A D to steer, ↓ / S / Space to brake, Enter to start.</span></p>
     </section>
 
     <section id="result" class="card" hidden>

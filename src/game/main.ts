@@ -19,10 +19,10 @@ const DEMO = query.has('autopilot');
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const ui = {
   view: $<HTMLCanvasElement>('view'), title: $('title'), result: $('result'), count: $('count'), hint: $('hint'),
-  round: $('round'), gen: $('gen'), time: $('time'), gap: $('gap'), live: $('live'), trackName: $('trackName'), watchText: $('watchText'), netTitle: $('netTitle'),
+  zones: $('zones'), round: $('round'), gen: $('gen'), time: $('time'), gap: $('gap'), live: $('live'), trackName: $('trackName'), watchText: $('watchText'), netTitle: $('netTitle'),
   map: $<HTMLCanvasElement>('map'), net: $<HTMLCanvasElement>('net'), chart: $<HTMLCanvasElement>('chart'),
   titleChart: $<HTMLCanvasElement>('titleChart'), resChart: $<HTMLCanvasElement>('resChart'),
-  race: $<HTMLButtonElement>('race'), next: $<HTMLButtonElement>('next'), again: $<HTMLButtonElement>('again'), mute: $<HTMLButtonElement>('mute'),
+  race: $<HTMLButtonElement>('race'), cont: $<HTMLButtonElement>('cont'), next: $<HTMLButtonElement>('next'), again: $<HTMLButtonElement>('again'), mute: $<HTMLButtonElement>('mute'),
   resEyebrow: $('resEyebrow'), resHead: $('resHead'), resBody: $('resBody'), resYou: $('resYou'), resRival: $('resRival'), resRivalLabel: $('resRivalLabel'), resBest: $('resBest'),
 };
 
@@ -90,6 +90,28 @@ const store = {
   get(key: string): string | null { try { return localStorage.getItem('learning-curve:' + key); } catch { return null; } },
   set(key: string, value: string): void { try { localStorage.setItem('learning-curve:' + key, value); } catch { /* private mode: nothing to keep */ } },
 };
+/** What is remembered per track: furthest you got, fastest lap, and a game still in progress. */
+interface Saved { rounds: number; lap: number | null; run: { round: number; wins: number } | null }
+interface Book { tracks: (Saved & { seed: number })[] }
+const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+function readBook(): Book {
+  try {
+    const b = JSON.parse(store.get('v1') ?? '') as Book;
+    if (b && Array.isArray(b.tracks)) return { tracks: b.tracks.filter((t) => num(t?.seed) && num(t.rounds)) };
+  } catch { /* nothing saved yet, or unreadable: start fresh */ }
+  return { tracks: [] };
+}
+function saved(seed: number): Saved {
+  const t = readBook().tracks.find((x) => x.seed === seed);
+  const run = t?.run && num(t.run.round) && num(t.run.wins) ? { round: Math.max(1, Math.min(ROUNDS, t.run.round)), wins: t.run.wins } : null;
+  return { rounds: t?.rounds ?? 0, lap: t && num(t.lap) ? t.lap : null, run };
+}
+/** Most recently played track first, fifty at most. */
+function keep(seed: number, s: Saved): void {
+  const tracks = [{ seed, ...s }, ...readBook().tracks.filter((t) => t.seed !== seed)].slice(0, 50);
+  store.set('v1', JSON.stringify({ tracks }));
+  store.set('last', String(seed));
+}
 const setScreen = (m: 'title' | 'watch' | 'race' | 'result') => {
   document.body.dataset.mode = m;
   ui.title.hidden = m !== 'title';
@@ -105,7 +127,7 @@ function onGeneration(g: StoredGen): void {
   ui.live.textContent = `Training right now. Generation ${g.gen} ${describe(g)}.` + (g.gen >= LAST_GEN ? ' Training is complete.' : '');
   ui.watchText.textContent = `Watching generation ${runGen} · trained to ${g.gen}`;
   if (mode === 'done' && !ui.next.hidden) readyNext();
-  if (!ui.title.hidden) drawChart(ui.titleChart, S.points, bestLap, null);
+  if (!ui.title.hidden) { titleButtons(); drawChart(ui.titleChart, S.points, bestLap, null); }
   if (!ui.result.hidden) drawChart(ui.resChart, S.points, bestLap, ui.next.hidden ? null : genForRound(round + 1));
 }
 
@@ -122,10 +144,23 @@ function attract(screen: 'title' | 'watch'): void {
   setScreen(screen);
   sound.drive(0, false, 0);
   if (screen === 'title') {
-    const record = store.get('best:' + S.seed);
-    ui.trackName.textContent = `Track ${S.seed}` + (record ? ` · your record: ${record} round${record === '1' ? '' : 's'}` : '');
+    const sv = saved(S.seed);
+    ui.trackName.textContent = `Track ${S.seed}` + (sv.rounds ? ` · record ${sv.rounds} round${sv.rounds === 1 ? '' : 's'}` : '') + (sv.lap !== null ? ` · best lap ${fmtLap(sv.lap)}` : '');
+    titleButtons();
     drawChart(ui.titleChart, S.points, bestLap, null);
   }
+}
+
+/** With a game in progress the card leads with Continue, and starting over is the quieter button. */
+function titleButtons(): void {
+  const run = saved(S.seed).run;
+  ui.cont.hidden = !run;
+  if (run) {
+    ui.cont.textContent = `Continue · round ${run.round}`;
+    ui.cont.disabled = !S.coach.gens[genForRound(run.round)];
+  }
+  ui.race.className = run ? 'alt' : 'go';
+  ui.race.textContent = run ? 'New game' : 'Race it';
 }
 
 function startRound(n: number): void {
@@ -144,6 +179,7 @@ function startRound(n: number): void {
   ui.gap.className = '';
   ui.netTitle.textContent = `Generation ${g.gen} · ${limited(g)}`;
   ui.hint.style.opacity = '1';
+  ui.zones.style.opacity = '1';
   setScreen('race');
 }
 
@@ -161,7 +197,8 @@ function finish(won: boolean, timedOut: boolean): void {
   if (p.finished) bestLap = bestLap === null ? p.lapTime : Math.min(bestLap, p.lapTime);
   if (won) wins++;
   const over = !won || last;
-  if (over && wins > Number(store.get('best:' + S.seed) ?? 0)) store.set('best:' + S.seed, String(wins));
+  const before = saved(S.seed);
+  keep(S.seed, { rounds: over ? Math.max(before.rounds, wins) : before.rounds, lap: bestLap, run: over ? null : { round: round + 1, wins } });
   const still = S.coach.gens.length > LAST_GEN ? '' : ' It is still training.';
   const held = `You held the network off for ${wins} round${wins === 1 ? '' : 's'}.`;
   ui.resEyebrow.textContent = over ? `Track ${S.seed} · round ${round} · game over` : `Track ${S.seed} · round ${round} of ${ROUNDS}`;
@@ -285,7 +322,7 @@ function advance(dt: number, draw = true): void {
         ui.gap.textContent = `${m >= 0 ? '+' : '−'}${Math.abs(m)} m`;
         ui.gap.className = m >= 0 ? 'ahead' : 'behind';
       }
-      if (c.time > 6) ui.hint.style.opacity = '0';
+      if (c.time > 6) { ui.hint.style.opacity = '0'; ui.zones.style.opacity = '0'; }
     }
   }
 
@@ -320,8 +357,9 @@ function loop(now: number): void {
 function openTrack(seed: number): void {
   S?.dispose();
   S = new Session(seed);
-  bestLap = null;
+  bestLap = saved(seed).lap;
   wins = 0;
+  store.set('last', String(seed));
   ui.race.disabled = true;
   ui.live.textContent = 'Starting the first generation…';
   try { history.replaceState(null, '', '?track=' + seed); } catch { /* embedded: the address stays as it is */ }
@@ -331,6 +369,13 @@ function openTrack(seed: number): void {
 const newTrack = () => openTrack(1 + Math.floor(Math.random() * 99999));
 const begin = () => { sound.start(); wins = 0; startRound(1); };
 ui.race.addEventListener('click', begin);
+ui.cont.addEventListener('click', () => {
+  const run = saved(S.seed).run;
+  if (!run) return;
+  sound.start();
+  wins = run.wins;
+  startRound(run.round);
+});
 $('watchRace').addEventListener('click', begin);
 ui.again.addEventListener('click', begin);
 ui.next.addEventListener('click', () => startRound(round + 1));
@@ -348,7 +393,7 @@ if (store.get('muted')) ui.mute.click();
 addEventListener('keydown', (e) => {
   // Enter moves on from a card. (Space is the brake, so it must not press buttons.)
   if (e.key !== 'Enter' || e.repeat) return;
-  const b = !ui.title.hidden ? ui.race : !ui.result.hidden ? (ui.next.hidden ? ui.again : ui.next) : null;
+  const b = !ui.title.hidden ? (ui.cont.hidden ? ui.race : ui.cont) : !ui.result.hidden ? (ui.next.hidden ? ui.again : ui.next) : null;
   if (b && !b.disabled) { e.preventDefault(); b.click(); }
 });
 addEventListener('resize', () => S.world.resize());
@@ -356,8 +401,9 @@ document.addEventListener('visibilitychange', () => { sound.pause(document.hidde
 
 const asked = Number(query.get('track') ?? location.hash.replace(/^#t/, ''));
 const today = new Date();
-// With no track in the address, everyone gets the same one each day.
-openTrack(Number.isInteger(asked) && asked > 0 ? asked : today.getUTCFullYear() * 10000 + (today.getUTCMonth() + 1) * 100 + today.getUTCDate());
+const lastTrack = Number(store.get('last'));
+// With no track in the address you get the one you played last, or on a first visit the track of the day.
+openTrack(Number.isInteger(asked) && asked > 0 ? asked : Number.isInteger(lastTrack) && lastTrack > 0 ? lastTrack : today.getUTCFullYear() * 10000 + (today.getUTCMonth() + 1) * 100 + today.getUTCDate());
 
 if (query.has('capture')) {
   // Frame-exact stepping for recording: `__lc.frames(n)` advances n frames of 1/60 s and draws the last one;
