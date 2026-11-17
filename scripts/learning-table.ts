@@ -25,9 +25,10 @@ for (const seed of seeds.length ? seeds : [1]) {
   const t1 = performance.now();
   let line = '';
   for (let g = 0; g < GENS; g++) {
-    const gen = trainer.next(), best = gen.results[0];
+    const gen = trainer.next(), best = gen.results[0], rival = gen.rival.result;
     const finishers = gen.results.filter((r) => r.lapTime !== null).length;
-    if (g < 12 || g % 5 === 0) line += `  gen ${String(g).padStart(3)}: ${best.lapTime ? best.lapTime.toFixed(2) + ' s' : (best.progress * 100).toFixed(0).padStart(3) + ' %  '}  (${finishers} finish)\n`;
+    const show = (r: typeof best) => (r.lapTime ? r.lapTime.toFixed(2) + ' s' : (r.progress * 100).toFixed(0).padStart(4) + ' % ');
+    if (g < 12 || g % 5 === 0) line += `  gen ${String(g).padStart(3)}  limit ${(gen.limit * 3.6).toFixed(0).padStart(3)} km/h  champion ${show(best)}  (${String(finishers).padStart(2)} of 60 finish)  best so far ${show(rival)}\n`;
   }
   console.log(line + `  ${((performance.now() - t1) / GENS).toFixed(0)} ms per generation`);
 }

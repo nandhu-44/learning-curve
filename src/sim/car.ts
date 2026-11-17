@@ -21,6 +21,8 @@ export interface Car {
   /** Heading in radians, counter-clockwise from +x. */
   h: number;
   v: number;
+  /** Top speed this car is allowed; learners earn theirs gradually (see evolve.ts). */
+  vmax: number;
   steer: number;
   /** Angle covered round the lap; 2π is the finish line. */
   prog: number;
@@ -34,8 +36,8 @@ export interface Car {
   scrape: number;
 }
 
-export function spawn(t: Track): Car {
-  return { x: t.start.x, y: t.start.y, h: t.start.h, v: 0, steer: 0, prog: 0, time: 0, alive: true, finished: false, lapTime: 0, best: 0, idle: 0, scrape: 0 };
+export function spawn(t: Track, vmax: number = VMAX): Car {
+  return { x: t.start.x, y: t.start.y, h: t.start.h, v: 0, vmax, steer: 0, prog: 0, time: 0, alive: true, finished: false, lapTime: 0, best: 0, idle: 0, scrape: 0 };
 }
 
 const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
@@ -49,7 +51,7 @@ export function step(c: Car, t: Track, steer: number, throttle: number, forgivin
   steer = clamp(steer, -1, 1);
   throttle = clamp(throttle, -1, 1);
   c.steer += clamp(steer - c.steer, -STEER_SPEED * DT, STEER_SPEED * DT);
-  const push = throttle > 0 ? ACCEL * throttle * (1 - (c.v / VMAX) ** 2) : BRAKE * throttle;
+  const push = throttle > 0 ? ACCEL * throttle * (1 - (c.v / c.vmax) ** 2) : BRAKE * throttle;
   c.v = Math.max(0, c.v + (push - DRAG * c.v - SCRUB * Math.abs(c.steer) * c.v) * DT);
   // Grip sets the tightest line: the faster the car, the wider it has to turn.
   c.h += c.steer * Math.min(YAW_MAX, GRIP / Math.max(c.v, 1)) * DT;

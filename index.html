@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Learning Curve</title>
+    <meta name="description" content="A 3D racing game where your opponent is a neural network that learns to drive while you play." />
+    <meta name="theme-color" content="#dcebf3" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2316181d'/%3E%3Cpath d='M5 24c6 0 7-15 13-15s4 9 9 9' fill='none' stroke='%23ffc21a' stroke-width='3.4' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" />
+  </head>
+  <body data-mode="title">
+    <canvas id="view" aria-label="3D view of the race track"></canvas>
+
+    <div class="hud">
+      <div class="tag race-only"><b>Round <span id="round">1</span></b><span>vs generation <span id="gen">0</span></span></div>
+      <div class="clock race-only"><span id="time">0.00</span><small id="gap"></small></div>
+      <div class="watchbar watch-only"><span id="watchText">Watching it learn</span><button id="watchRace" class="go small" type="button">Race it</button></div>
+      <button id="mute" class="chip" type="button" aria-pressed="true">Sound on</button>
+      <canvas id="map" class="map"></canvas>
+      <div class="panel net"><h2 id="netTitle">Rival's network, live</h2><canvas id="net"></canvas></div>
+      <div class="panel curve"><h2>Champion by generation</h2><canvas id="chart"></canvas></div>
+      <p class="hint race-only" id="hint"><span class="touch">Drag on the left to steer · hold the right to brake</span><span class="fine">← → steer · ↓ or Space brakes · the throttle is always open</span></p>
+    </div>
+
+    <div id="stick" class="stick" hidden><i id="knob"></i></div>
+    <div id="count" class="count" hidden></div>
+
+    <section id="title" class="card">
+      <h1>Learning <em>Curve</em></h1>
+      <p class="lede">Your opponent is a neural network that has never driven a car. It learns between your laps, and it never forgets. Stay ahead for as long as you can.</p>
+      <p class="live" id="live">Starting the first generation…</p>
+      <canvas id="titleChart" class="chart"></canvas>
+      <div class="row">
+        <button id="race" class="go" type="button" disabled>Race it</button>
+        <button id="justWatch" class="alt" type="button">Watch it learn</button>
+        <button id="newTrack" class="alt" type="button">New track</button>
+      </div>
+      <p class="keys"><span id="trackName"></span><span class="touch"> · Drag on the left to steer, hold the right to brake. Best sideways.</span><span class="fine"> · ← → or A D to steer, ↓ / S / Space to brake.</span></p>
+    </section>
+
+    <section id="result" class="card" hidden>
+      <p class="eyebrow" id="resEyebrow"></p>
+      <h2 id="resHead"></h2>
+      <p class="lede" id="resBody"></p>
+      <dl class="stats">
+        <div><dt>Your lap</dt><dd id="resYou"></dd></div>
+        <div><dt id="resRivalLabel">Rival</dt><dd id="resRival"></dd></div>
+        <div><dt>Your best</dt><dd id="resBest"></dd></div>
+      </dl>
+      <canvas id="resChart" class="chart"></canvas>
+      <div class="row">
+        <button id="next" class="go" type="button"></button>
+        <button id="again" class="go" type="button">Rematch</button>
+        <button id="resWatch" class="alt" type="button">Watch it learn</button>
+        <button id="resNew" class="alt" type="button">New track</button>
+      </div>
+    </section>
+
+    <script type="module" src="/src/game/main.ts"></script>
+  </body>
+</html>
